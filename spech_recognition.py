@@ -110,3 +110,50 @@ result = asr("voice.mp3")
 
 # Print the transcription
 print("Whisper Transcription:", result['text'])
+
+import torch
+import librosa
+import numpy as np
+import matplotlib.pyplot as plt
+from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
+
+# STEP 1: Load the pretrained model + processor
+model_name = "facebook/wav2vec2-base-960h"
+processor = Wav2Vec2Processor.from_pretrained(model_name)
+model = Wav2Vec2ForCTC.from_pretrained(model_name)
+
+# STEP 2: Load audio manually and check properties
+file = "voice.mp3"
+waveform, sr = librosa.load(file, sr=16000)  # Required: 16kHz
+print(f"Loaded audio: {file}")
+print(f"Waveform shape: {waveform.shape}, Sample Rate: {sr}")
+
+# Plot the waveform
+plt.figure(figsize=(10, 2))
+plt.plot(waveform)
+plt.title("Audio Waveform")
+plt.xlabel("Time (samples)")
+plt.ylabel("Amplitude")
+plt.tight_layout()
+plt.show()
+
+# STEP 3: Tokenize the audio (convert waveform to model input)
+inputs = processor(waveform, sampling_rate=16000, return_tensors="pt", padding=True)
+
+# View input values shape
+print(f"Input shape to model: {inputs.input_values.shape}")  # [batch, time_steps]
+
+# STEP 4: Run model inference
+with torch.no_grad():
+    logits = model(inputs.input_values).logits  # [batch, time_steps, vocab_size]
+
+# View output logits
+print(f"Logits shape: {logits.shape}")  # [1, time, vocab]
+
+# STEP 5: Greedy decoding: take argmax at each time step
+predicted_ids = torch.argmax(logits, dim=-1)
+print("Predicted token IDs:", predicted_ids)
+
+# STEP 6: Convert token IDs to string (transcription)
+transcription = processor.batch_decode(predicted_ids)[0]
+print("\nTranscription:", transcription)
