@@ -157,3 +157,11 @@ print("Predicted token IDs:", predicted_ids)
 # STEP 6: Convert token IDs to string (transcription)
 transcription = processor.batch_decode(predicted_ids)[0]
 print("\nTranscription:", transcription)
+
+# What else can we do?
+
+from transformers import pipeline
+
+asr = pipeline("automatic-speech-recognition", model="facebook/wav2vec2-base-960h")
+result = asr("voice.mp3")
+print("Pipeline output:", result['text'])
